@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Générateur d'étiquettes A4</title>
+  <style>
+    :root {
+      --cream: #FDFAEF;
+      --blue-light: #5284CB;
+      --yellow: #FFBE00;
+      --blue-dark: #3E6398;
+      --text: #22324a;
+      --muted: #66758a;
+      --border: #d9dfeb;
+      --soft: #f7f9fc;
+      --card: rgba(255,255,255,0.94);
+      --shadow: 0 12px 28px rgba(62, 99, 152, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(82,132,203,0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(255,190,0,0.10), transparent 24%),
+        linear-gradient(180deg, #ffffff 0%, var(--cream) 100%);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .panel,
+    .preview-wrap {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.8);
+      box-shadow: var(--shadow);
+      border-radius: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .panel {
+      padding: 20px;
+      position: sticky;
+      top: 20px;
+      height: calc(100vh - 40px);
+      overflow: auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.55rem;
+      line-height: 1.1;
+      color: var(--blue-dark);
+    }
+
+    .section {
+      margin-bottom: 18px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.66);
+    }
+
+    .section h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      color: var(--blue-dark);
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    input,
+    textarea,
+    button,
+    select {
+      font: inherit;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      color: var(--text);
+      outline: none;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--blue-light);
+      box-shadow: 0 0 0 4px rgba(82,132,203,0.12);
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .check input {
+      width: auto;
+      margin: 0;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .primary {
+      background: linear-gradient(135deg, var(--blue-light), var(--blue-dark));
+      color: white;
+    }
+
+    .secondary {
+      background: white;
+      color: var(--blue-dark);
+      border: 1px solid var(--border);
+    }
+
+    .editor-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .editor-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.82);
+      padding: 12px;
+    }
+
+    .editor-card h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--blue-dark);
+    }
+
+    .editor-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .editor-card-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .mini-btn {
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .inline-note {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .muted-box {
+      background: var(--soft);
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .preview-wrap {
+      padding: 18px;
+      overflow: auto;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .toolbar .title {
+      font-weight: 800;
+      color: var(--blue-dark);
+    }
+
+    .sheet-shell {
+      display: flex;
+      justify-content: center;
+      padding: 12px;
+      overflow: auto;
+    }
+
+    .sheet {
+      width: 210mm;
+      min-width: 210mm;
+      height: 297mm;
+      background: white;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      position: relative;
+      display: grid;
+      align-content: start;
+      justify-content: start;
+    }
+
+    .label-card {
+      border: 1px dashed #bfcce1;
+      overflow: hidden;
+      background: white;
+      display: flex;
+    }
+
+    .label-inner {
+      width: 100%;
+      height: 100%;
+      padding: 1.6mm 2.4mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      text-align: center;
+      gap: 0;
+    }
+
+    .product-name {
+      width: 100%;
+      max-width: 100%;
+      font-weight: 900;
+      line-height: 0.92;
+      letter-spacing: -0.04em;
+      word-break: break-word;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      white-space: normal;
+      text-wrap: balance;
+      padding: 0 1.4mm;
+      margin-bottom: 4.2mm;
+    }
+
+    .price-block {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      margin-top: 0;
+      padding: 0 1mm;
+      flex-shrink: 0;
+    }
+
+    .ttc {
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      white-space: nowrap;
+    }
+
+    .ht {
+      margin-top: 0.8mm;
+      font-size: 2.3mm;
+      color: var(--muted);
+    }
+
+    .footer-note {
+      width: 100%;
+      font-size: 2.1mm;
+      line-height: 1.1;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-height: 2.2mm;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1100px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        position: static;
+        height: auto;
+      }
+
+      .sheet-shell {
+        justify-content: flex-start;
+      }
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+
+      html, body {
+        background: white !important;
+      }
+
+      body * {
+        visibility: hidden;
+      }
+
+      .sheet, .sheet * {
+        visibility: visible;
+      }
+
+      .sheet {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 210mm;
+        height: 297mm;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel">
+      <h1>Générateur d'étiquettes A4</h1>
+
+      <div class="section">
+        <h2>Saisie des étiquettes</h2>
+        <div id="editorGrid" class="editor-grid"></div>
+        <div class="btn-row" style="margin-top:10px;">
+          <button class="secondary" id="addLabelBtn" type="button">Ajouter une étiquette</button>
+          <button class="secondary" id="applyBtn" type="button">Valider / générer</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Mise en page</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="labelWidth">Largeur (mm)</label>
+            <input id="labelWidth" type="number" min="10" step="0.5" value="66" />
+          </div>
+          <div class="field">
+            <label for="labelHeight">Hauteur (mm)</label>
+            <input id="labelHeight" type="number" min="10" step="0.5" value="35" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="pageMargin">Marge haut / bas (mm)</label>
+            <input id="pageMargin" type="number" min="6" step="0.5" value="10" />
+          </div>
+          <div class="field">
+            <label for="gap">Espacement (mm)</label>
+            <input id="gap" type="number" min="0" step="0.5" value="0" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="copies">Nombre d'étiquettes remplies</label>
+          <input id="copies" type="number" min="1" step="1" value="18" />
+        </div>
+        <div class="muted-box">
+          3 colonnes fixes. La largeur par défaut est réglée à <strong>66 mm</strong> pour éviter que les colonnes extérieures soient rognées à l’impression.
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Options</h2>
+        <label class="check"><input id="showFooter" type="checkbox" checked> Afficher la ligne du bas</label>
+        <label class="check"><input id="showGuides" type="checkbox" checked> Afficher les pointillés</label>
+      </div>
+
+      <div class="section">
+        <h2>Actions</h2>
+        <div class="btn-row">
+          <button class="primary" id="printBtn" type="button">Imprimer / PDF</button>
+          <button class="secondary" id="fillBtn" type="button">Remplir la page</button>
+        </div>
+        <div class="btn-row" style="margin-top:10px;">
+          <button class="primary" id="clearBtn" type="button">Nouvelle planche vide</button>
+          <button class="secondary" id="demoBtn" type="button">Démo</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="preview-wrap">
+      <div class="toolbar">
+        <div class="title">Aperçu A4</div>
+        <div style="color: var(--muted); font-size: 0.9rem;">Astuce : désactive les marges supplémentaires dans la fenêtre d'impression du navigateur.</div>
+      </div>
+      <div class="sheet-shell">
+        <div class="sheet" id="sheet"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const els = {
+      editorGrid: document.getElementById('editorGrid'),
+      addLabelBtn: document.getElementById('addLabelBtn'),
+      applyBtn: document.getElementById('applyBtn'),
+      copies: document.getElementById('copies'),
+      labelWidth: document.getElementById('labelWidth'),
+      labelHeight: document.getElementById('labelHeight'),
+      pageMargin: document.getElementById('pageMargin'),
+      gap: document.getElementById('gap'),
+      showFooter: document.getElementById('showFooter'),
+      showGuides: document.getElementById('showGuides'),
+      printBtn: document.getElementById('printBtn'),
+      fillBtn: document.getElementById('fillBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      demoBtn: document.getElementById('demoBtn'),
+      sheet: document.getElementById('sheet')
+    };
+
+    function euro(value) {
+      return new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'EUR'
+      }).format(Number(value) || 0);
+    }
+
+    function computeHT(ttc) {
+      const t = Number(ttc) || 0;
+      return t / 1.2;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function collectItems() {
+      const cards = Array.from(document.querySelectorAll('.editor-card'));
+      return cards.map(function(card) {
+        const nameInput = card.querySelector('[data-field="name"]');
+        const priceInput = card.querySelector('[data-field="price"]');
+        const footerInput = card.querySelector('[data-field="footer"]');
+        return {
+          name: nameInput ? nameInput.value.trim() : '',
+          priceTTC: priceInput ? priceInput.value.trim() : '',
+          footer: footerInput ? footerInput.value.trim() : ''
+        };
+      });
+    }
+
+    function createEditorCard(index, item) {
+      const card = document.createElement('div');
+      card.className = 'editor-card';
+      card.innerHTML = '' +
+        '<div class="editor-card-head">' +
+          '<h3>Étiquette ' + index + '</h3>' +
+          '<div class="editor-card-actions">' +
+            '<button class="secondary mini-btn" type="button" data-action="duplicate">Dupliquer</button>' +
+            '<button class="secondary mini-btn" type="button" data-action="delete">Supprimer</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label>Nom de l’équipement</label>' +
+          '<input type="text" data-field="name" placeholder="Ex : Pompe filtration BWT 1 CV" value="' + escapeHtml(item.name || '') + '">' +
+        '</div>' +
+        '<div class="field">' +
+          '<label>Prix TTC (€)</label>' +
+          '<input type="number" min="0" step="0.01" data-field="price" placeholder="Ex : 349" value="' + escapeHtml(item.priceTTC || '') + '">' +
+          '<div class="inline-note">TVA fixe à 20 % · le HT se calcule automatiquement.</div>' +
+        '</div>' +
+        '<div class="field">' +
+          '<label>Ligne du bas (optionnel)</label>' +
+          '<input type="text" data-field="footer" placeholder="Ex : Promo, Nouveauté, Sur commande" value="' + escapeHtml(item.footer || '') + '">' +
+        '</div>';
+      return card;
+    }
+
+    function bindEditorCardActions() {
+      const cards = Array.from(document.querySelectorAll('.editor-card'));
+      cards.forEach(function(card, index) {
+        const duplicateBtn = card.querySelector('[data-action="duplicate"]');
+        const deleteBtn = card.querySelector('[data-action="delete"]');
+        const nameInput = card.querySelector('[data-field="name"]');
+        const priceInput = card.querySelector('[data-field="price"]');
+        const footerInput = card.querySelector('[data-field="footer"]');
+
+        if (nameInput) {
+          nameInput.oninput = function() {
+            buildSheet(false);
+          };
+        }
+
+        if (priceInput) {
+          priceInput.oninput = function() {
+            buildSheet(false);
+          };
+          priceInput.onkeydown = function(event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            const currentItems = collectItems();
+            const nextIndex = index + 1;
+
+            if (nextIndex >= currentItems.length) {
+              currentItems.push({ name: '', priceTTC: '', footer: '' });
+              renderEditor(currentItems);
+              buildSheet(false);
+            }
+
+            const updatedCards = Array.from(document.querySelectorAll('.editor-card'));
+            const nextCard = updatedCards[nextIndex];
+            const nextNameInput = nextCard ? nextCard.querySelector('[data-field="name"]') : null;
+            if (nextNameInput) {
+              nextNameInput.focus();
+              nextNameInput.select();
+            }
+          };
+        }
+
+        if (footerInput) {
+          footerInput.oninput = function() {
+            buildSheet(false);
+          };
+        }
+
+        if (duplicateBtn) {
+          duplicateBtn.onclick = function() {
+            const items = collectItems();
+            const source = items[index] || { name: '', priceTTC: '', footer: '' };
+            items.splice(index + 1, 0, {
+              name: source.name,
+              priceTTC: source.priceTTC,
+              footer: source.footer || ''
+            });
+            renderEditor(items);
+            buildSheet(false);
+          };
+        }
+
+        if (deleteBtn) {
+          deleteBtn.onclick = function() {
+            const items = collectItems();
+            if (items.length <= 1) {
+              items[0] = { name: '', priceTTC: '', footer: '' };
+            } else {
+              items.splice(index, 1);
+            }
+            renderEditor(items);
+            buildSheet(false);
+          };
+        }
+      });
+    }
+
+    function renderEditor(items) {
+      els.editorGrid.innerHTML = '';
+      items.forEach(function(item, index) {
+        els.editorGrid.appendChild(createEditorCard(index + 1, item));
+      });
+      bindEditorCardActions();
+    }
+
+    function getLayout() {
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const marginTopBottom = Math.max(6, parseFloat(els.pageMargin.value || '10'));
+      const gap = Math.max(0, parseFloat(els.gap.value || '0'));
+      const labelWidth = parseFloat(els.labelWidth.value || '66');
+      const labelHeight = parseFloat(els.labelHeight.value || '35');
+      const cols = 3;
+      const usedWidth = (cols * labelWidth) + ((cols - 1) * gap);
+      const sideMargin = Math.max(0, (pageWidth - usedWidth) / 2);
+      const usableHeight = pageHeight - (marginTopBottom * 2);
+      const rows = Math.max(1, Math.floor((usableHeight + gap) / (labelHeight + gap)));
+
+      return {
+        cols: cols,
+        rows: rows,
+        total: cols * rows,
+        marginTopBottom: marginTopBottom,
+        sideMargin: sideMargin,
+        gap: gap,
+        labelWidth: labelWidth,
+        labelHeight: labelHeight
+      };
+    }
+
+    function fitLabelContent(card) {
+      const labelInner = card.querySelector('.label-inner');
+      const name = card.querySelector('.product-name');
+      const ttc = card.querySelector('.ttc');
+      const ht = card.querySelector('.ht');
+      const footer = card.querySelector('.footer-note');
+      if (!labelInner || !name || !ttc || !ht) return;
+
+      const lh = parseFloat(els.labelHeight.value || '35');
+      const startNameSize = Math.max(44, Math.min(84, lh * 2.3));
+      const startTtcSize = Math.max(14, Math.min(28, lh * 0.725));
+
+      name.style.fontSize = startNameSize + 'px';
+      ttc.style.fontSize = startTtcSize + 'px';
+      ht.style.fontSize = '';
+      if (footer) footer.style.fontSize = '';
+
+      const nameMin = 10;
+      const ttcMin = 10;
+      const htMin = 7;
+      const footerMin = 6;
+
+      let safety = 0;
+      while (safety < 260) {
+        const nameOverflows = name.scrollHeight > name.clientHeight + 1 || name.scrollWidth > name.clientWidth + 1;
+        const cardOverflows = labelInner.scrollHeight > labelInner.clientHeight + 1;
+
+        if (!nameOverflows && !cardOverflows) {
+          break;
+        }
+
+        if (nameOverflows && parseFloat(name.style.fontSize) > nameMin) {
+          name.style.fontSize = (parseFloat(name.style.fontSize) - 1) + 'px';
+        } else if (cardOverflows && parseFloat(name.style.fontSize) > nameMin) {
+          name.style.fontSize = (parseFloat(name.style.fontSize) - 1) + 'px';
+        } else if (cardOverflows && parseFloat(ttc.style.fontSize) > ttcMin) {
+          ttc.style.fontSize = (parseFloat(ttc.style.fontSize) - 1) + 'px';
+        } else if (cardOverflows && parseFloat(ht.style.fontSize || window.getComputedStyle(ht).fontSize) > htMin) {
+          const currentHt = parseFloat(ht.style.fontSize || window.getComputedStyle(ht).fontSize);
+          ht.style.fontSize = (currentHt - 0.4) + 'px';
+        } else if (cardOverflows && footer && !footer.classList.contains('hidden')) {
+          const currentFooter = parseFloat(footer.style.fontSize || window.getComputedStyle(footer).fontSize);
+          if (currentFooter > footerMin) {
+            footer.style.fontSize = (currentFooter - 0.4) + 'px';
+          } else {
+            break;
+          }
+        } else {
+          break;
+        }
+
+        safety += 1;
+      }
+    }
+
+    function adjustFonts(card) {
+      const ht = card.querySelector('.ht');
+      const footer = card.querySelector('.footer-note');
+      if (ht) ht.style.fontSize = '';
+      if (footer) footer.style.fontSize = '';
+      fitLabelContent(card);
+    }
+
+    function createLabel(data, filled) {
+      const layout = getLayout();
+      const card = document.createElement('div');
+      card.className = 'label-card';
+      card.style.width = layout.labelWidth + 'mm';
+      card.style.height = layout.labelHeight + 'mm';
+
+      if (!els.showGuides.checked) {
+        card.style.borderStyle = 'solid';
+        card.style.borderColor = 'transparent';
+      }
+
+      if (!filled) {
+        card.style.opacity = '0.18';
+      }
+
+      const footerClass = els.showFooter.checked ? 'footer-note' : 'footer-note hidden';
+
+      card.innerHTML = '' +
+        '<div class="label-inner">' +
+          '<div class="product-name">' + (filled ? escapeHtml(data.name) : '') + '</div>' +
+          '<div class="price-block">' +
+            '<div class="ttc">' + (filled ? escapeHtml(data.ttc) : '') + '</div>' +
+            '<div class="ht">' + (filled ? escapeHtml(data.ht + ' HT') : '') + '</div>' +
+          '</div>' +
+          '<div class="' + footerClass + '">' + (filled ? escapeHtml(data.footer) : '') + '</div>' +
+        '</div>';
+
+      return card;
+    }
+
+    function buildSheet(fillAll) {
+      const layout = getLayout();
+      const items = collectItems().filter(function(item) {
+        return item.name || item.priceTTC || item.footer;
+      });
+      const requestedCopies = Math.max(1, parseInt(els.copies.value || '1', 10));
+      const maxFilled = fillAll
+        ? Math.min(layout.total, items.length || layout.total)
+        : Math.min(requestedCopies, layout.total, Math.max(items.length, requestedCopies));
+
+      els.sheet.innerHTML = '';
+      els.sheet.style.paddingTop = layout.marginTopBottom + 'mm';
+      els.sheet.style.paddingBottom = layout.marginTopBottom + 'mm';
+      els.sheet.style.paddingLeft = layout.sideMargin + 'mm';
+      els.sheet.style.paddingRight = layout.sideMargin + 'mm';
+      els.sheet.style.gap = layout.gap + 'mm';
+      els.sheet.style.gridTemplateColumns = 'repeat(' + layout.cols + ', ' + layout.labelWidth + 'mm)';
+      els.sheet.style.gridTemplateRows = 'repeat(' + layout.rows + ', ' + layout.labelHeight + 'mm)';
+
+      for (let i = 0; i < layout.total; i += 1) {
+        const item = items[i] || { name: '', priceTTC: '', footer: '' };
+        const data = {
+          name: item.name,
+          ttc: euro(item.priceTTC),
+          ht: euro(computeHT(item.priceTTC)),
+          footer: item.footer
+        };
+        const label = createLabel(data, i < maxFilled && i < items.length);
+        els.sheet.appendChild(label);
+      }
+
+      requestAnimationFrame(function() {
+        const cards = document.querySelectorAll('.label-card');
+        cards.forEach(function(card) {
+          adjustFonts(card);
+        });
+      });
+    }
+
+    function fillWholeSheet() {
+      const layout = getLayout();
+      const items = collectItems().filter(function(item) {
+        return item.name || item.priceTTC || item.footer;
+      });
+      els.copies.value = String(Math.min(layout.total, items.length));
+      buildSheet(false);
+    }
+
+    function clearForm() {
+      const layout = getLayout();
+      const emptyCount = layout.total;
+      const items = Array.from({ length: emptyCount }, function() {
+        return { name: '', priceTTC: '', footer: '' };
+      });
+      els.copies.value = '1';
+      els.labelWidth.value = '66';
+      els.labelHeight.value = '35';
+      els.pageMargin.value = '10';
+      els.gap.value = '0';
+      renderEditor(items);
+      buildSheet(false);
+    }
+
+    function loadDemo() {
+      const items = [
+        { name: 'Pompe filtration BWT 1 CV', priceTTC: '349', footer: 'Garantie fabricant' },
+        { name: 'Pompe BWT Inverpro', priceTTC: '599', footer: 'Stock limité' },
+        { name: 'Robot piscine Dolphin', priceTTC: '899', footer: 'Offre spéciale' },
+        { name: 'Filtre à sable Bolero', priceTTC: '429', footer: 'Disponible' },
+        { name: 'Coffret électrique piscine', priceTTC: '219', footer: 'Pose en supplément' },
+        { name: 'Cellule électrolyseur', priceTTC: '289', footer: 'Selon compatibilité' },
+        { name: 'Pompe à chaleur piscine', priceTTC: '1590', footer: 'Prix emporté' },
+        { name: 'Volet hors-sol', priceTTC: '3290', footer: 'Sur commande' },
+        { name: 'Pool Command e-Pool', priceTTC: '449', footer: 'Pilotage smartphone' },
+        { name: 'Analyseur Pool Sense', priceTTC: '179', footer: 'Connecté' },
+        { name: 'Kit pièces à sceller', priceTTC: '259', footer: 'Coloris selon stock' },
+        { name: 'Projecteur LED blanc', priceTTC: '139', footer: '12 V' },
+        { name: 'Skimmer standard', priceTTC: '49', footer: 'Pièce détachée' },
+        { name: 'Bride projecteur', priceTTC: '19.9', footer: 'Vérifier modèle' },
+        { name: 'Régulation pH', priceTTC: '690', footer: 'Compatible e-Pool' },
+        { name: 'JUST REGUL', priceTTC: '749', footer: 'Régulation connectée' },
+        { name: 'MINISALT CONNECT 16/80', priceTTC: '1290', footer: 'Électrolyseur connecté' },
+        { name: 'Remplissage Pool Level', priceTTC: '129', footer: 'Automatique' }
+      ];
+      els.copies.value = '18';
+      els.labelWidth.value = '66';
+      els.labelHeight.value = '35';
+      els.pageMargin.value = '10';
+      els.gap.value = '0';
+      renderEditor(items);
+      buildSheet(false);
+    }
+
+    function runSelfTests() {
+      console.assert(Math.round(computeHT(120) * 100) / 100 === 100, 'computeHT should compute VAT exclusion at 20%');
+      const layout = getLayout();
+      console.assert(layout.cols === 3, 'getLayout should force 3 columns');
+      console.assert(layout.rows >= 1, 'getLayout should return at least one row');
+      console.assert(layout.marginTopBottom >= 6, 'top/bottom margin should respect printer safety minimum');
+
+      const testItems = [{ name: 'Pompe', priceTTC: '120', footer: 'Promo' }, { name: '', priceTTC: '', footer: '' }];
+      renderEditor(testItems);
+      console.assert(document.querySelectorAll('.editor-card').length === 2, 'renderEditor should create one editor card per item');
+      console.assert(document.querySelector('.editor-card [data-field="name"]').value === 'Pompe', 'renderEditor should populate name field');
+      console.assert(document.querySelector('.editor-card [data-field="price"]').value === '120', 'renderEditor should populate price field');
+      console.assert(document.querySelector('.editor-card [data-field="footer"]').value === 'Promo', 'renderEditor should populate footer field');
+      console.assert(document.querySelectorAll('.editor-card [data-action="duplicate"]').length === 2, 'each editor card should have a duplicate button');
+      console.assert(document.querySelectorAll('.editor-card [data-action="delete"]').length === 2, 'each editor card should have a delete button');
+      const firstPriceInput = document.querySelector('.editor-card [data-field="price"]');
+      console.assert(typeof firstPriceInput.onkeydown === 'function', 'price input should support Enter navigation');
+
+      const testLabel = createLabel({ name: 'Pompe', ttc: '120,00 €', ht: '100,00 €', footer: 'Promo' }, true);
+      document.body.appendChild(testLabel);
+      adjustFonts(testLabel);
+      console.assert(parseFloat(testLabel.querySelector('.product-name').style.fontSize) >= 32, 'product name should render much larger');
+      console.assert(parseFloat(testLabel.querySelector('.product-name').style.fontSize) > parseFloat(testLabel.querySelector('.ttc').style.fontSize), 'product name should render larger than ttc');
+      console.assert(testLabel.querySelector('.product-name').style.marginBottom === '4.2mm', 'product name should have expanded spacing before price');
+      console.assert(testLabel.querySelector('.footer-note').textContent === 'Promo', 'label should render footer text');
+
+      const longLabel = createLabel({ name: 'Pompe filtration BWT vitesse variable ultra silencieuse', ttc: '1290,00 €', ht: '1075,00 €', footer: '' }, true);
+      document.body.appendChild(longLabel);
+      adjustFonts(longLabel);
+      console.assert(longLabel.querySelector('.product-name').scrollHeight <= longLabel.querySelector('.product-name').clientHeight + 1, 'product name should fit within two lines');
+      console.assert(parseFloat(longLabel.querySelector('.product-name').style.fontSize) < parseFloat(testLabel.querySelector('.product-name').style.fontSize), 'long names should reduce product-name font size responsively');
+      console.assert(longLabel.querySelector('.label-inner').scrollHeight <= longLabel.querySelector('.label-inner').clientHeight + 1, 'label content should fit inside card');
+      console.assert(parseFloat(longLabel.querySelector('.ttc').style.fontSize) >= 10, 'ttc should stay readable after responsive shrink');
+
+      longLabel.remove();
+      testLabel.remove();
+    }
+
+    [
+      els.copies,
+      els.labelWidth,
+      els.labelHeight,
+      els.pageMargin,
+      els.gap,
+      els.showFooter,
+      els.showGuides
+    ].forEach(function(el) {
+      el.addEventListener('input', function() {
+        buildSheet(false);
+      });
+      el.addEventListener('change', function() {
+        buildSheet(false);
+      });
+    });
+
+    els.addLabelBtn.addEventListener('click', function() {
+      const items = collectItems();
+      items.push({ name: '', priceTTC: '', footer: '' });
+      renderEditor(items);
+    });
+
+    els.applyBtn.addEventListener('click', function() {
+      buildSheet(false);
+    });
+
+    els.printBtn.addEventListener('click', function() {
+      window.print();
+    });
+
+    els.fillBtn.addEventListener('click', function() {
+      fillWholeSheet();
+    });
+
+    els.clearBtn.addEventListener('click', function() {
+      clearForm();
+    });
+
+    els.demoBtn.addEventListener('click', function() {
+      loadDemo();
+    });
+
+    loadDemo();
+    runSelfTests();
+    buildSheet(false);
+  </script>
+</body>
+</html>
